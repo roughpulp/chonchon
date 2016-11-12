@@ -25,8 +25,8 @@ digitsTexture.wrapT = THREE.RepeatWrapping;
 
 function MakeCounterMesh() {
     
-    const size = 100
-    const width = 100;
+    const size = 300
+    const width = 300;
         
     const positions = new Float32Array(10 * 2 * 3 * 3);  // 2 trigs per face X 3 vertices per trig X 3 coords per vertex
     const normals   = new Float32Array(10 * 2 * 3 * 3);  // 2 trigs per face X 3 vertices per trig X 3 coords per vertex
@@ -195,16 +195,16 @@ function MakeCounterMesh2() {
 class Counters {
     constructor() {
         this.number = 0;
-        this.nbDigits = 5;
+        this.nbDigits = 9;
         this.max = Math.pow(10, this.nbDigits) - 1;
         this.digits = new Array(this.nbDigits);
         for (let ii = 0; ii < this.nbDigits; ++ii) {
             const mesh = MakeCounterMesh();
-            mesh.position.x -= (ii * 100) - 100;
+            mesh.position.x -= (ii * 250) - 900;
             this.digits[ii] = mesh;
         }
         
-        this.transitionTimeMs = 100.0;
+        this.transitionTimeMs = 1000.0;
         this.destination = -1;
         this.transitionStart = 0;
         this.deltaAngles = new Array(this.nbDigits);
@@ -216,8 +216,14 @@ class Counters {
         this.tryBeginTransition(timestamp, 1);
     }
     
+    incStop() {
+    }
+    
     dec(timestamp) {
         this.tryBeginTransition(timestamp, -1);
+    }
+    
+    decStop() {
     }
     
     tick(timestamp) {
@@ -269,7 +275,7 @@ class Counters {
     
     digitValue(digit, number) {
         return Math.floor(number / Math.pow(10, digit)) % 10;
-    }    
+    }
 }
         
 class Inputs {
@@ -363,7 +369,7 @@ animate();
 
 function init() {
     camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
-    camera.position.z = 400;
+    camera.position.z = 1200;
     scene = new THREE.Scene();
     for (let ii = 0; ii < counters.digits.length; ++ii) {
         scene.add( counters.digits[ii] );
@@ -383,17 +389,21 @@ function onWindowResize() {
 }
 
 function animate(timestamp) {
-    requestAnimationFrame( animate );
+    requestAnimationFrame(animate);
     if (inputs.up) {
         counters.inc(timestamp);
+    } else {
+        counters.incStop();
     }
+    
     if (inputs.down) {
         counters.dec(timestamp);
+    } else {
+        counters.decStop();
     }
     counters.tick(timestamp);
-    renderer.render( scene, camera );
+    renderer.render(scene, camera);
 }
-
 		</script>
 	</body>
 </html>
