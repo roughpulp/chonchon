@@ -16,11 +16,12 @@
 		<script src="js/three.min.js"></script>
 		<script>
 
+const DIGIT_ANGLE = 2.0 * Math.PI / 10.0
+        
+        
 const digitsTexture = new THREE.TextureLoader().load( 'textures/digits.png' );
 digitsTexture.wrapS = THREE.RepeatWrapping;
 digitsTexture.wrapT = THREE.RepeatWrapping;
-//digitsTexture.flipY = false;
-const textureSize = 512;
 
 function MakeCounterMesh() {
     
@@ -36,10 +37,10 @@ function MakeCounterMesh() {
     
     for (let ii = 0; ii < 10; ++ii) {
         // position XYZ
-        let angle0 = 2.0 * Math.PI / 10 * ii        
+        let angle0 = (DIGIT_ANGLE * (ii + 0)) - (DIGIT_ANGLE / 2.0)
+        let angle1 = (DIGIT_ANGLE * (ii + 1)) - (DIGIT_ANGLE / 2.0)
         let z0 = Math.cos(angle0) * size;
         let y0 = Math.sin(angle0) * size;
-        let angle1 = 2.0 * Math.PI / 10 * (ii + 1)
         let z1 = Math.cos(angle1) * size;
         let y1 = Math.sin(angle1) * size;
 
@@ -53,7 +54,7 @@ function MakeCounterMesh() {
         // texture UV
         let u0 = Math.floor(ii % 4) * (1.0 / 4.0);
         let v0 = 1.0 - (Math.floor(ii / 4) * (1.0 / 4.0));
-        let u1 = u0 + (1.0 / 4.0);
+        let u1 = u0 + (1.0 / 4.0);  
         let v1 = v0 - (1.0 / 4.0);
         console.log("digit: " + ii + "(" + u0 + "," + v0 + ") (" + u1 + "," + v1 + ")");
         
@@ -128,7 +129,6 @@ function MakeCounterMesh() {
     geometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
     geometry.computeBoundingSphere();
     const material = new THREE.MeshBasicMaterial({
-        side:THREE.DoubleSide,
         map: digitsTexture
     });
     const mesh = new THREE.Mesh( geometry, material );
@@ -194,8 +194,82 @@ function MakeCounterMesh2() {
         
 class Counters {
     constructor() {
-        this.mesh = MakeCounterMesh();
+        this.number = 0;
+        this.nbDigits = 5;
+        this.max = Math.pow(10, this.nbDigits) - 1;
+        this.digits = new Array(this.nbDigits);
+        for (let ii = 0; ii < this.nbDigits; ++ii) {
+            const mesh = MakeCounterMesh();
+            mesh.position.x -= (ii * 100) - 100;
+            this.digits[ii] = mesh;
+        }
+        
+        this.transitionTimeMs = 100.0;
+        this.destination = -1;
+        this.transitionStart = 0;
+        this.deltaAngles = new Array(this.nbDigits);
+        this.srcAngles = new Array(this.nbDigits);
+        this.dstAngles = new Array(this.nbDigits);
     }
+
+    inc(timestamp) {
+        this.tryBeginTransition(timestamp, 1);
+    }
+    
+    dec(timestamp) {
+        this.tryBeginTransition(timestamp, -1);
+    }
+    
+    tick(timestamp) {
+        if (! this.inTransition()) {
+            return;
+        }
+        if (timestamp >= (this.transitionStart + this.transitionTimeMs)) {
+            this.closeTransition();
+            return;
+        }
+        const ratio = (timestamp - this.transitionStart) / this.transitionTimeMs;
+        for (let ii = 0; ii < this.nbDigits; ++ii) {
+            this.digits[ii].rotation.x = this.srcAngles[ii] + (this.deltaAngles[ii] * ratio);
+        }
+    }
+
+    inTransition() {
+        return this.destination >= 0;
+    }
+    
+    closeTransition() {
+        for (let ii = 0; ii < this.nbDigits; ++ii) {
+            this.digits[ii].rotation.x = this.dstAngles[ii];
+        }
+        this.transitionStart = 0;
+        this.number = this.destination;
+        this.destination = -1;
+    }
+    
+    tryBeginTransition(timestamp, delta) {
+        if (this.inTransition()) {
+            return;
+        }
+        this.transitionStart = timestamp;
+        this.destination = this.number + delta;
+        if (this.destination > this.max) {
+            this.destination = 0;
+        } else if (this.destination < 0){
+            this.destination = this.max;
+        }
+        for (let ii = 0; ii < this.nbDigits; ++ii) {
+            const d0 = this.digitValue(ii, this.number);
+            const d1 = this.digitValue(ii, this.destination);
+            this.deltaAngles[ii] = delta * (d1 == d0 ? 0 : 1) * DIGIT_ANGLE;
+            this.srcAngles[ii] = this.digitValue(ii, this.number) * DIGIT_ANGLE;
+            this.dstAngles[ii] = this.digitValue(ii, this.destination) * DIGIT_ANGLE;
+        }
+    }
+    
+    digitValue(digit, number) {
+        return Math.floor(number / Math.pow(10, digit)) % 10;
+    }    
 }
         
 class Inputs {
@@ -205,6 +279,7 @@ class Inputs {
         this.right = false;
         this.up = false;
         this.down = false;    
+        this.digits = [false, false, false, false, false, false, false, false, false, false];
     }
 
     registerInputHandlers(window) {
@@ -226,13 +301,38 @@ class Inputs {
             case 83: // down
               inputs.down = isDown;
               break;
-            case 32:
-              if (isDown) {
-                inputs.onFireDown();
-              } else {
-                inputs.onFireUp();
-              }
+              
+            case 87:
+              inputs.digits[0] = isDown;
               break;
+            case 88:
+              inputs.digits[1] = isDown;
+              break;
+            case 67:
+              inputs.digits[2] = isDown;
+              break;
+            case 86:
+              inputs.digits[3] = isDown;
+              break;
+            case 66:
+              inputs.digits[4] = isDown;
+              break;
+            case 78:
+              inputs.digits[5] = isDown;
+              break;
+            case 188:
+              inputs.digits[6] = isDown;
+              break;
+            case 190:
+              inputs.digits[7] = isDown;
+              break;
+            case 191:
+              inputs.digits[8] = isDown;
+              break;
+            case 223:
+              inputs.digits[9] = isDown;
+              break;
+
             default:
               console.log("key = " + event.keyCode);
           }
@@ -240,6 +340,15 @@ class Inputs {
         window.addEventListener('keydown', inputHandler, false);
         window.addEventListener('keyup', inputHandler, false);
         console.log("registerInputHandlers done");
+    }
+    
+    getDigit() {
+        for (let ii = 0; ii < 10; ++ii) {
+            if (this.digits[ii]) {
+                return ii;
+            }
+        }
+        return -1;
     }
 }
 
@@ -256,7 +365,9 @@ function init() {
     camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
     camera.position.z = 400;
     scene = new THREE.Scene();
-    scene.add( counters.mesh );
+    for (let ii = 0; ii < counters.digits.length; ++ii) {
+        scene.add( counters.digits[ii] );
+    }
     renderer = new THREE.WebGLRenderer();
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -271,20 +382,15 @@ function onWindowResize() {
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
-function animate() {
+function animate(timestamp) {
     requestAnimationFrame( animate );
     if (inputs.up) {
-        counters.mesh.rotation.x -= 0.02;
+        counters.inc(timestamp);
     }
     if (inputs.down) {
-        counters.mesh.rotation.x += 0.02;
+        counters.dec(timestamp);
     }
-    if (inputs.left) {
-        counters.mesh.rotation.y -= 0.02;
-    }
-    if (inputs.right) {
-        counters.mesh.rotation.y += 0.02;
-    }
+    counters.tick(timestamp);
     renderer.render( scene, camera );
 }
 
