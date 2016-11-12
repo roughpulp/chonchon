@@ -16,14 +16,185 @@
 		<script src="js/three.min.js"></script>
 		<script>
 
+const digitsTexture = new THREE.TextureLoader().load( 'textures/digits.png' );
+digitsTexture.wrapS = THREE.RepeatWrapping;
+digitsTexture.wrapT = THREE.RepeatWrapping;
+//digitsTexture.flipY = false;
+const textureSize = 512;
+
+function MakeCounterMesh() {
+    
+    const size = 100
+    const width = 100;
+        
+    const positions = new Float32Array(10 * 2 * 3 * 3);  // 2 trigs per face X 3 vertices per trig X 3 coords per vertex
+    const normals   = new Float32Array(10 * 2 * 3 * 3);  // 2 trigs per face X 3 vertices per trig X 3 coords per vertex
+    const uvs       = new Float32Array(10 * 2 * 3 * 2);  // 2 trigs per face X 3 vertices per trig X 2 coords per vertex
+
+    const x0 = -width / 2.0;
+    const x1 = width / 2.0;
+    
+    for (let ii = 0; ii < 10; ++ii) {
+        // position XYZ
+        let angle0 = 2.0 * Math.PI / 10 * ii        
+        let z0 = Math.cos(angle0) * size;
+        let y0 = Math.sin(angle0) * size;
+        let angle1 = 2.0 * Math.PI / 10 * (ii + 1)
+        let z1 = Math.cos(angle1) * size;
+        let y1 = Math.sin(angle1) * size;
+
+        // normal XYZ
+        let vec0 = new THREE.Vector3(x0 - x0, y1 - y0, z1 - z0);
+        let vec1 = new THREE.Vector3(x1 - x0, y0 - y0, z0 - z0);
+        let normal = new THREE.Vector3();
+        normal.crossVectors(vec0, vec1);
+        normal.normalize();
+        
+        // texture UV
+        let u0 = Math.floor(ii % 4) * (1.0 / 4.0);
+        let v0 = 1.0 - (Math.floor(ii / 4) * (1.0 / 4.0));
+        let u1 = u0 + (1.0 / 4.0);
+        let v1 = v0 - (1.0 / 4.0);
+        console.log("digit: " + ii + "(" + u0 + "," + v0 + ") (" + u1 + "," + v1 + ")");
+        
+        let tIdx = 0;   // triangle index
+        let vIdx = 0;   // vertex index
+        
+        tIdx = 0; vIdx = 0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = x0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = y0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = z0;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = normal.x;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = normal.y;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = normal.z;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 0] = u0;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 1] = v1;
+        
+        tIdx = 0; vIdx = 1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = x1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = y0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = z0;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = normal.x;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = normal.y;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = normal.z;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 0] = u1;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 1] = v1;
+        
+        tIdx = 0; vIdx = 2;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = x1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = y1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = z1;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = normal.x;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = normal.y;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = normal.z;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 0] = u1;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 1] = v0;
+        
+        //
+        tIdx = 1; vIdx = 0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = x0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = y0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = z0;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = normal.x;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = normal.y;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = normal.z;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 0] = u0;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 1] = v1;
+        
+        tIdx = 1; vIdx = 1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = x1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = y1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = z1;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = normal.x;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = normal.y;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = normal.z;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 0] = u1;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 1] = v0;
+        
+        tIdx = 1; vIdx = 2;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = x0;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = y1;
+        positions[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = z1;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 0] = normal.x;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 1] = normal.y;
+        normals[(ii * 2 * 3 * 3) + (tIdx * 3 * 3) + (vIdx * 3) + 2] = normal.z;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 0] = u0;
+        uvs[(ii * 2 * 3 * 2) + (tIdx * 3 * 2) + (vIdx * 2) + 1] = v0;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+    geometry.addAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ) );
+    geometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+    geometry.computeBoundingSphere();
+    const material = new THREE.MeshBasicMaterial({
+        side:THREE.DoubleSide,
+        map: digitsTexture
+    });
+    const mesh = new THREE.Mesh( geometry, material );
+    return mesh;
+} 
+
+function MakeCounterMesh2() {
+    const positions = new Float32Array(2 * 3 * 3);  // 2 trigs per face X 3 vertices per trig X 3 coords per vertex
+    const normals   = new Float32Array(2 * 3 * 3);  // 2 trigs per face X 3 vertices per trig X 3 coords per vertex
+    const uvs       = new Float32Array(2 * 3 * 2);  // 2 trigs per face X 3 vertices per trig X 2 coords per vertex
+
+    //
+    positions[0] = 0
+    positions[1] = 0
+    positions[2] = 0
+    uvs[0] = 0
+    uvs[1] = 0
+    //
+    positions[3] = 200
+    positions[4] = 0
+    positions[5] = 0
+    uvs[2] = 1
+    uvs[3] = 0
+    //
+    positions[6] = 200
+    positions[7] = 200
+    positions[8] = 0
+    uvs[4] = 1
+    uvs[5] = 1
+
+    //
+    positions[9] = 0
+    positions[10] = 0
+    positions[11] = 0
+    uvs[6] = 0
+    uvs[7] = 0
+    //
+    positions[12] = 200
+    positions[13] = 200
+    positions[14] = 0
+    uvs[8] = 1
+    uvs[9] = 1
+    //
+    positions[15] = 0
+    positions[16] = 200
+    positions[17] = 0
+    uvs[10] = 0
+    uvs[11] = 1
+        
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+    geometry.addAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ) );
+    geometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+    geometry.computeBoundingSphere();
+    const material = new THREE.MeshBasicMaterial({
+        side:THREE.DoubleSide,
+        map: digitsTexture
+    });
+    const mesh = new THREE.Mesh( geometry, material );
+    return mesh;
+} 
+
+        
 class Counters {
     constructor() {
-        const texture = new THREE.TextureLoader().load( 'textures/digit_0.png' );
-        const geometry = new THREE.CylinderGeometry( 100, 100, 200, 10 );
-        const material = new THREE.MeshBasicMaterial( { map: texture } );    
-        this.mesh = new THREE.Mesh( geometry, material );
-        this.mesh.rotation.z += Math.PI / 2.0;
-        this.mesh.rotation.x += Math.PI / 2.0;
+        this.mesh = MakeCounterMesh();
     }
 }
         
@@ -44,7 +215,7 @@ class Inputs {
           var isDown = event.type == 'keydown';
           switch (event.keyCode) {
             case 81: // left
-              inputs.left = isDown;
+                inputs.left = isDown;
               break;
             case 68: // right
               inputs.right = isDown;
@@ -85,7 +256,6 @@ function init() {
     camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
     camera.position.z = 400;
     scene = new THREE.Scene();
-        
     scene.add( counters.mesh );
     renderer = new THREE.WebGLRenderer();
     renderer.setPixelRatio( window.devicePixelRatio );
@@ -94,6 +264,7 @@ function init() {
     //
     window.addEventListener( 'resize', onWindowResize, false );
 }
+
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -107,6 +278,12 @@ function animate() {
     }
     if (inputs.down) {
         counters.mesh.rotation.x += 0.02;
+    }
+    if (inputs.left) {
+        counters.mesh.rotation.y -= 0.02;
+    }
+    if (inputs.right) {
+        counters.mesh.rotation.y += 0.02;
     }
     renderer.render( scene, camera );
 }
